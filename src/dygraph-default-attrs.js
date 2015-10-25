@@ -13,9 +13,6 @@ var DEFAULT_ATTRS = {
   highlightSeriesBackgroundColor: 'rgb(255, 255, 255)',
 
   labelsDivWidth: 250,
-  labelsDivStyles: {
-    // TODO(danvk): move defaults from createStatusMessage_ here.
-  },
   labelsSeparateLines: false,
   labelsShowZeroValues: true,
   labelsKMB: false,
