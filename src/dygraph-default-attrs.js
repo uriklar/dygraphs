@@ -67,7 +67,6 @@ var DEFAULT_ATTRS = {
   axisLineColor: "black",
   axisLineWidth: 0.3,
   gridLineWidth: 0.3,
-  axisLabelColor: "black",
   axisLabelWidth: 50,
   gridLineColor: "rgb(128,128,128)",
 
