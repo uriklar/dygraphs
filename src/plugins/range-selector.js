@@ -21,6 +21,8 @@ var rangeSelector = function() {
   this.hasTouchInterface_ = typeof(TouchEvent) != 'undefined';
   this.isMobileDevice_ = /mobile|android/gi.test(navigator.appVersion);
   this.interfaceCreated_ = false;
+  this.isZooming = false;
+  this.isPanning = false;
 };
 
 rangeSelector.prototype.toString = function() {
@@ -44,6 +46,8 @@ rangeSelector.prototype.destroy = function() {
   this.fgcanvas_ = null;
   this.leftZoomHandle_ = null;
   this.rightZoomHandle_ = null;
+  this.isZooming = false;
+  this.isPanning = false;
 };
 
 //------------------------------------------------------------------
@@ -227,11 +231,11 @@ rangeSelector.prototype.createZoomHandles_ = function() {
   img.width = 9;
   img.height = 16;
   img.src = 'data:image/png;base64,' +
-'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAYAAADESFVDAAAAAXNSR0IArs4c6QAAAAZiS0dEANAA' +
-'zwDP4Z7KegAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB9sHGw0cMqdt1UwAAAAZdEVYdENv' +
-'bW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAaElEQVQoz+3SsRFAQBCF4Z9WJM8KCDVwownl' +
-'6YXsTmCUsyKGkZzcl7zkz3YLkypgAnreFmDEpHkIwVOMfpdi9CEEN2nGpFdwD03yEqDtOgCaun7s' +
-'qSTDH32I1pQA2Pb9sZecAxc5r3IAb21d6878xsAAAAAASUVORK5CYII=';
+    'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAYAAADESFVDAAAAAXNSR0IArs4c6QAAAAZiS0dEANAA' +
+    'zwDP4Z7KegAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB9sHGw0cMqdt1UwAAAAZdEVYdENv' +
+    'bW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAaElEQVQoz+3SsRFAQBCF4Z9WJM8KCDVwownl' +
+    '6YXsTmCUsyKGkZzcl7zkz3YLkypgAnreFmDEpHkIwVOMfpdi9CEEN2nGpFdwD03yEqDtOgCaun7s' +
+    'qSTDH32I1pQA2Pb9sZecAxc5r3IAb21d6878xsAAAAAASUVORK5CYII=';
 
   if (this.isMobileDevice_) {
     img.width *= 2;
@@ -251,8 +255,8 @@ rangeSelector.prototype.initInteraction_ = function() {
   var topElem = document;
   var clientXLast = 0;
   var handle = null;
-  var isZooming = false;
-  var isPanning = false;
+  self.isZooming = false;
+  self.isPanning = false;
   var dynamic = !this.isMobileDevice_;
 
   // We cover iframes during mouse interactions. See comments in
@@ -262,7 +266,7 @@ rangeSelector.prototype.initInteraction_ = function() {
   // functions, defined below.  Defining them this way (rather than with
   // "function foo() {...}" makes JSHint happy.
   var toXDataWindow, onZoomStart, onZoom, onZoomEnd, doZoom, isMouseInPanZone,
-      onPanStart, onPan, onPanEnd, doPan, onCanvasHover;
+    onPanStart, onPan, onPanEnd, doPan, onCanvasHover;
 
   // Touch event functions
   var onZoomHandleTouchEvent, onCanvasTouchEvent, addTouchEvents;
@@ -277,7 +281,7 @@ rangeSelector.prototype.initInteraction_ = function() {
 
   onZoomStart = function(e) {
     utils.cancelEvent(e);
-    isZooming = true;
+    this.isZooming = true;
     clientXLast = e.clientX;
     handle = e.target ? e.target : e.srcElement;
     if (e.type === 'mousedown' || e.type === 'dragstart') {
@@ -291,7 +295,7 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onZoom = function(e) {
-    if (!isZooming) {
+    if (!this.isZooming) {
       return false;
     }
     utils.cancelEvent(e);
@@ -326,10 +330,10 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onZoomEnd = function(e) {
-    if (!isZooming) {
+    if (!this.isZooming) {
       return false;
     }
-    isZooming = false;
+    this.isZooming = false;
     tarp.uncover();
     utils.removeEvent(topElem, 'mousemove', onZoom);
     utils.removeEvent(topElem, 'mouseup', onZoomEnd);
@@ -366,9 +370,9 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onPanStart = function(e) {
-    if (!isPanning && isMouseInPanZone(e) && self.getZoomHandleStatus_().isZoomed) {
+    if (!this.isPanning && isMouseInPanZone(e) && self.getZoomHandleStatus_().isZoomed) {
       utils.cancelEvent(e);
-      isPanning = true;
+      this.isPanning = true;
       clientXLast = e.clientX;
       if (e.type === 'mousedown') {
         // These events are removed manually.
@@ -381,7 +385,7 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onPan = function(e) {
-    if (!isPanning) {
+    if (!this.isPanning) {
       return false;
     }
     utils.cancelEvent(e);
@@ -420,10 +424,10 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onPanEnd = function(e) {
-    if (!isPanning) {
+    if (!this.isPanning) {
       return false;
     }
-    isPanning = false;
+    this.isPanning = false;
     utils.removeEvent(topElem, 'mousemove', onPan);
     utils.removeEvent(topElem, 'mouseup', onPanEnd);
     // If on a slower device, do pan now.
@@ -444,7 +448,7 @@ rangeSelector.prototype.initInteraction_ = function() {
   };
 
   onCanvasHover = function(e) {
-    if (isZooming || isPanning) {
+    if (this.isZooming || this.isPanning) {
       return;
     }
     var cursor = isMouseInPanZone(e) ? 'move' : 'default';
@@ -781,9 +785,9 @@ rangeSelector.prototype.getZoomHandleStatus_ = function() {
   var leftHandlePos = parseFloat(this.leftZoomHandle_.style.left) + halfHandleWidth;
   var rightHandlePos = parseFloat(this.rightZoomHandle_.style.left) + halfHandleWidth;
   return {
-      leftHandlePos: leftHandlePos,
-      rightHandlePos: rightHandlePos,
-      isZoomed: (leftHandlePos - 1 > this.canvasRect_.x || rightHandlePos + 1 < this.canvasRect_.x+this.canvasRect_.w)
+    leftHandlePos: leftHandlePos,
+    rightHandlePos: rightHandlePos,
+    isZoomed: (leftHandlePos - 1 > this.canvasRect_.x || rightHandlePos + 1 < this.canvasRect_.x+this.canvasRect_.w)
   };
 };
 
